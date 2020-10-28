@@ -92,6 +92,8 @@ func (sl *SignerListenerEndpoint) SendRequest(request SignerMessage) (SignerMess
 		return nil, err
 	}
 
+	sl.Logger.Info("SignerListener: SendRequest sent")
+
 	err = sl.WriteMessage(request)
 	if err != nil {
 		return nil, err
@@ -101,6 +103,7 @@ func (sl *SignerListenerEndpoint) SendRequest(request SignerMessage) (SignerMess
 	if err != nil {
 		return nil, err
 	}
+	sl.Logger.Info("SignerListener: SendRequest got response")
 
 	return res, nil
 }
@@ -116,11 +119,13 @@ func (sl *SignerListenerEndpoint) ensureConnection(maxWait time.Duration) error 
 	}
 
 	// block until connected or timeout
+	sl.Logger.Info("SignerListener: blocking for connection")
 	sl.triggerConnect()
 	err := sl.WaitConnection(sl.connectionAvailableCh, maxWait)
 	if err != nil {
 		return err
 	}
+	sl.Logger.Info("SignerListener: got connection")
 
 	return nil
 }
@@ -185,11 +190,17 @@ func (sl *SignerListenerEndpoint) pingLoop() {
 		select {
 		case <-sl.pingTimer.C:
 			{
+				sl.Logger.Info("SignerListener: PingLoop Active")
 				_, err := sl.SendRequest(&PingRequest{})
 				if err != nil {
 					sl.Logger.Error("SignerListener: Ping timeout")
 					sl.triggerReconnect()
+				} else {
+					sl.Logger.Info("SignerListener: PingLoop successes - sleeping")
+					// wait 1000 ms between each ping so we won't flood the connection
+					time.Sleep(1000 * time.Millisecond)
 				}
+
 			}
 		case <-sl.Quit():
 			return
