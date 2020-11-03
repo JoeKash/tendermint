@@ -13,7 +13,6 @@ import (
 // Handles remote validator connections that provide signing services
 type SignerClient struct {
 	endpoint *SignerListenerEndpoint
-	pubKey crypto.PubKey
 }
 
 var _ types.PrivValidator = (*SignerClient)(nil)
@@ -68,10 +67,6 @@ func (sc *SignerClient) Ping() error {
 // GetPubKey retrieves a public key from a remote signer
 func (sc *SignerClient) GetPubKey() crypto.PubKey {
 	sc.endpoint.Logger.Info("SignerClient: GetPubKey")
-	if sc.pubKey != nil {
-		sc.endpoint.Logger.Info("SignerClient: GetPubKey use cached key")
-		return sc.pubKey
-	}
 	response, err := sc.endpoint.SendRequest(&PubKeyRequest{})
 	if err != nil {
 		sc.endpoint.Logger.Error("SignerClient::GetPubKey", "err", err)
@@ -88,8 +83,6 @@ func (sc *SignerClient) GetPubKey() crypto.PubKey {
 		sc.endpoint.Logger.Error("failed to get private validator's public key", "err", pubKeyResp.Error)
 		return nil
 	}
-
-	sc.pubKey = pubKeyResp.PubKey
 
 	return pubKeyResp.PubKey
 }
